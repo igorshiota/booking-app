@@ -1,0 +1,177 @@
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+
+/* App specific CSS */
+
+.container {
+  display: flex;
+  gap: 20px;
+  padding: 20px;
+}
+
+.service-list, .cart {
+  flex: 1;
+  padding: 20px;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  background: #f9f9f9;
+}
+
+.service-item {
+  display: flex;
+  justify-content: space-between;
+  margin: 10px 0;
+}
+
+button {
+  padding: 5px 10px;
+  background: #007bff;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #0056b3;
+}
+
+/* Service List CSS */
+
+/* General styling for the service list */
+.service-list {
+  padding: 20px;
+}
+
+h2 {
+  font-size: 2rem;
+  margin-bottom: 20px;
+}
+
+/* Service cards layout */
+.service-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.service-card {
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  padding: 20px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease;
+}
+
+.service-card:hover {
+  transform: translateY(-5px);
+}
+
+/* Styling for service details */
+.service-info {
+  margin-bottom: 20px;
+}
+
+.service-description {
+  font-size: 1rem;
+  color: #555;
+}
+
+.service-price {
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #2d9cdb;
+}
+
+.service-duration {
+  font-size: 1rem;
+  color: #777;
+}
+
+/* Button styling for select and add-to-cart actions */
+.select-button,
+.add-to-cart-button {
+  background-color: #2d9cdb;
+  color: white;
+  padding: 10px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  width: 100%;
+  font-size: 1rem;
+  transition: background-color 0.3s;
+}
+
+.select-button:hover,
+.add-to-cart-button:hover {
+  background-color: #1a7fbb;
+}
+
+/* Provider selection layout */
+.provider-selection {
+  margin-top: 30px;
+}
+
+.provider-cards {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.provider-card {
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  padding: 20px;
+  width: 250px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  margin: 10px;
+}
+
+.provider-card h4 {
+  font-size: 1.2rem;
+}
+
+/* Time button styling */
+.time-button {
+  background-color: #f0f0f0;
+  padding: 10px;
+  margin: 5px;
+  border: 1px solid #ccc;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.time-button.selected {
+  background-color: #007bff;
+  color: white;
+  border-color: #007bff;
+}
+
+/* Deselect button styling */
+.select-button.selected {
+  background-color: #4CAF50;
+  cursor: not-allowed;
+}
+
+.select-button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.select-button:focus {
+  outline: none;
+}
+
+
