@@ -27,26 +27,35 @@ const ServiceList = ({ addToCart, selectedProvider, setSelectedProvider, selecte
   }, []);
 
   // Fetch providers for the selected service
-  const fetchProviders = async (serviceId) => {
-    try {
-      const providersCol = collection(db, "providers");
-      const providersSnapshot = await getDocs(providersCol);
-      const providerList = providersSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
+const fetchProviders = async (serviceId) => {
+  try {
+    const providersCol = collection(db, "providers");
+    const providersSnapshot = await getDocs(providersCol);
+    const providerList = providersSnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
 
-      // Filter providers based on selected serviceId
-      const filteredProviders = providerList.filter(provider => provider.serviceId === serviceId);
+    console.log("All Providers:", providerList); 
+    console.log("Looking for serviceId:", serviceId); 
 
-      setProviders((prevProviders) => ({
-        ...prevProviders,
-        [serviceId]: filteredProviders, // Store providers per service
-      }));
-    } catch (error) {
-      console.error("Error fetching providers:", error);
-    }
-  };
+    const filteredProviders = providerList.filter(provider => 
+      provider.serviceIds && provider.serviceIds.includes(serviceId)
+    );
+
+    console.log("Filtered Providers:", filteredProviders); 
+
+    setProviders((prevProviders) => ({
+      ...prevProviders,
+      [serviceId]: filteredProviders,
+    }));
+  } catch (error) {
+    console.error("Error fetching providers:", error);
+  }
+};
+
+  
+  
 
   // Fetch providers when a service is selected
   useEffect(() => {
