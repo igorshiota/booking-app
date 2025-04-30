@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import ServiceList from "../components/ServiceList";
 import Cart from "../components/Cart";
 import Notification from "./Notification";
-import logo from "../images/nuig_logo.png"; // Replace with your actual logo file
+import logo from "../images/nuig_logo.png"; 
 
 const Home = () => {
   const [cart, setCart] = useState([]);

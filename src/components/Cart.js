@@ -33,10 +33,10 @@ const Cart = ({ cart }) => {
 
     try {
       await emailjs.send(
-        "service_xuk2j3f",     // Replace with your EmailJS service ID
-        "template_vm9it3p",    // Replace with your EmailJS template ID
+        "service_xuk2j3f",     // EmailJS service ID
+        "template_vm9it3p",    // EmailJS template ID
         templateParams,
-        "Kekp5OpWnJoA4sP2Q"      // Replace with your EmailJS public key
+        "Kekp5OpWnJoA4sP2Q"      // EmailJS public key
       );
       setStatus("Booking confirmed! Check your email.");
       setName("");

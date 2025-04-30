@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { collection, getDocs } from "firebase/firestore";
-import { db } from "../firebaseConfig"; // Adjust path if needed
+import { db } from "../firebaseConfig"; 
 
 const ServiceList = ({ addToCart, selectedProvider, setSelectedProvider, selectedTime, setSelectedTime, cart, setCart }) => {
   const [services, setServices] = useState([]);
@@ -58,8 +58,8 @@ const ServiceList = ({ addToCart, selectedProvider, setSelectedProvider, selecte
   const handleServiceSelection = (service) => {
     if (selectedService?.id === service.id) {
       setSelectedService(null);
-      setSelectedProvider(null); // Keep provider selection intact if you need
-      setSelectedTime(null); // Keep time selection intact if you need
+      setSelectedProvider(null); // Keep provider selection intact 
+      setSelectedTime(null); // Keep time selection intact 
     } else {
       setSelectedService(service);
       setSelectedProvider(null);
