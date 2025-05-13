@@ -53,11 +53,32 @@ const Home = () => {
 };
 
 const styles = {
-  container: { textAlign: "center", padding: "20px" },
+  container: {
+    fontFamily: "'Segoe UI', sans-serif",
+    textAlign: "center",
+    padding: "20px",
+    backgroundColor: "#f8f9fa",
+    minHeight: "100vh",
+  },
   logoContainer: { marginBottom: "20px" },
-  logo: { width: "150px" },
-  content: { display: "flex", justifyContent: "space-between", gap: "20px" },
-  card: { padding: "20px", borderRadius: "10px", boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)", background: "#fff", width: "45%" }
+  logo: { width: "120px", height: "auto" },
+  content: {
+    display: "flex",
+    flexDirection: "row",
+    justifyContent: "center",
+    flexWrap: "wrap",
+    gap: "30px",
+  },
+  card: {
+    padding: "20px",
+    borderRadius: "16px",
+    boxShadow: "0 4px 12px rgba(0,0,0,0.06)",
+    background: "#fff",
+    width: "100%",
+    maxWidth: "480px",
+    textAlign: "left",
+  },
 };
+
 
 export default Home;

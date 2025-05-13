@@ -49,66 +49,67 @@ const Cart = ({ cart }) => {
 
   return (
     <div className="cart">
-      <h2>Cart</h2>
+  <h2>Cart</h2>
+  {cart.length === 0 ? (
+    <p>No services added.</p>
+  ) : (
+    <>
+      {cart.map((item, index) => (
+        <div key={index} style={{ marginBottom: "1rem", borderBottom: "1px solid #eee", paddingBottom: "0.5rem" }}>
+          <p><strong>{item.name}</strong> with {item.provider.name} at {item.timeSlot}</p>
+          <p style={{ color: "#666" }}>${item.price} for {item.duration} minutes</p>
+        </div>
+      ))}
 
-      {cart.length === 0 ? (
-        <p>No services added.</p>
-      ) : (
-        <>
-          {cart.map((item, index) => (
-            <div key={index} className="cart-item">
-              <p>
-                <strong>{item.name}</strong> — {item.provider.name} at {item.timeSlot}
-              </p>
-              <p>
-                <small>
-                  ${item.price} for {item.duration} minutes
-                </small>
-              </p>
-            </div>
-          ))}
+      <div style={{ marginTop: "1rem", paddingTop: "1rem", borderTop: "1px solid #ccc" }}>
+        <h3>Summary</h3>
+        <p><strong>Duration:</strong> {totalDuration} mins</p>
+        <p><strong>Total:</strong> ${totalPrice}</p>
+      </div>
 
-          {/* Summary section */}
-          <div className="cart-summary" style={{ marginTop: "1rem", borderTop: "1px solid #ccc", paddingTop: "1rem" }}>
-            <h3>Summary</h3>
-            <p><strong>Total Duration:</strong> {totalDuration} minutes</p>
-            <p><strong>Total Cost:</strong> ${totalPrice}</p>
-          </div>
+      <form onSubmit={handleBooking} style={{ marginTop: "2rem" }}>
+        <input
+          type="text"
+          placeholder="Your Name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          style={inputStyle}
+        />
+        <input
+          type="email"
+          placeholder="Your Email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          style={inputStyle}
+        />
+        <button type="submit" style={submitStyle}>Book Now</button>
+        {status && <p style={{ marginTop: "1rem", color: status.includes("confirmed") ? "green" : "red" }}>{status}</p>}
+      </form>
+    </>
+  )}
+</div>
 
-          {/* Booking Form */}
-          <div className="booking-form" style={{ marginTop: "2rem" }}>
-            <h3>Complete your Booking</h3>
-            <form onSubmit={handleBooking}>
-              <div>
-                <label>Name:</label><br />
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  required
-                  style={{ width: "100%", padding: "8px", marginBottom: "1rem" }}
-                />
-              </div>
-              <div>
-                <label>Email:</label><br />
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  style={{ width: "100%", padding: "8px", marginBottom: "1rem" }}
-                />
-              </div>
-              <button type="submit" style={{ padding: "10px 20px" }}>
-                Book Now
-              </button>
-            </form>
-            {status && <p style={{ marginTop: "1rem", color: status.includes("confirmed") ? "green" : "red" }}>{status}</p>}
-          </div>
-        </>
-      )}
-    </div>
+
   );
 };
+
+const inputStyle = {
+  width: "100%",
+  padding: "10px",
+  marginBottom: "1rem",
+  borderRadius: "8px",
+  border: "1px solid #ccc",
+};
+
+const submitStyle = {
+  width: "100%",
+  padding: "12px",
+  backgroundColor: "#007bff",
+  color: "#fff",
+  border: "none",
+  borderRadius: "8px",
+  cursor: "pointer",
+};
+
 
 export default Cart;
