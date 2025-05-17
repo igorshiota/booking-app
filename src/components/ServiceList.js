@@ -4,8 +4,31 @@ import { db } from "../firebaseConfig";
 
 const ServiceList = ({ addToCart, selectedProvider, setSelectedProvider, selectedTime, setSelectedTime, cart, setCart }) => {
   const [services, setServices] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState(null);
   const [selectedService, setSelectedService] = useState(null);
   const [providers, setProviders] = useState({});
+
+  // Fetch categories from Firestore
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const categoriesCol = collection(db, "servicesCategory");
+        const categoriesSnapshot = await getDocs(categoriesCol);
+        const categoriesList = categoriesSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setCategories(categoriesList);
+        if (categoriesList.length > 0) {
+          setSelectedCategory(categoriesList[0].id); // Select first category by default
+        }
+      } catch (error) {
+        console.error("Error fetching categories:", error);
+      }
+    };
+    fetchCategories();
+  }, []);
 
   // Fetch services from Firestore
   useEffect(() => {
@@ -22,40 +45,31 @@ const ServiceList = ({ addToCart, selectedProvider, setSelectedProvider, selecte
         console.error("Error fetching services:", error);
       }
     };
-
     fetchServices();
   }, []);
 
   // Fetch providers for the selected service
-const fetchProviders = async (serviceId) => {
-  try {
-    const providersCol = collection(db, "providers");
-    const providersSnapshot = await getDocs(providersCol);
-    const providerList = providersSnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
+  const fetchProviders = async (serviceId) => {
+    try {
+      const providersCol = collection(db, "providers");
+      const providersSnapshot = await getDocs(providersCol);
+      const providerList = providersSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
 
-    console.log("All Providers:", providerList); 
-    console.log("Looking for serviceId:", serviceId); 
+      const filteredProviders = providerList.filter(provider => 
+        provider.serviceIds && provider.serviceIds.includes(serviceId)
+      );
 
-    const filteredProviders = providerList.filter(provider => 
-      provider.serviceIds && provider.serviceIds.includes(serviceId)
-    );
-
-    console.log("Filtered Providers:", filteredProviders); 
-
-    setProviders((prevProviders) => ({
-      ...prevProviders,
-      [serviceId]: filteredProviders,
-    }));
-  } catch (error) {
-    console.error("Error fetching providers:", error);
-  }
-};
-
-  
-  
+      setProviders((prevProviders) => ({
+        ...prevProviders,
+        [serviceId]: filteredProviders,
+      }));
+    } catch (error) {
+      console.error("Error fetching providers:", error);
+    }
+  };
 
   // Fetch providers when a service is selected
   useEffect(() => {
@@ -64,11 +78,22 @@ const fetchProviders = async (serviceId) => {
     }
   }, [selectedService]);
 
+  // When category changes, reset selected service/provider/time
+  useEffect(() => {
+    setSelectedService(null);
+    setSelectedProvider(null);
+    setSelectedTime(null);
+  }, [selectedCategory]);
+
+  const handleCategorySelect = (categoryId) => {
+    setSelectedCategory(categoryId);
+  };
+
   const handleServiceSelection = (service) => {
     if (selectedService?.id === service.id) {
       setSelectedService(null);
-      setSelectedProvider(null); // Keep provider selection intact 
-      setSelectedTime(null); // Keep time selection intact 
+      setSelectedProvider(null);
+      setSelectedTime(null);
     } else {
       setSelectedService(service);
       setSelectedProvider(null);
@@ -83,12 +108,32 @@ const fetchProviders = async (serviceId) => {
     setSelectedTime(null);
   };
 
+  // Filter services by selected category
+  const filteredServices = services.filter(service => service.categoryId === selectedCategory);
+
   return (
     <div className="service-list" style={{ maxWidth: "600px", margin: "0 auto" }}>
       <h2 style={{ marginBottom: "16px" }}>Select a Service</h2>
-  
+
+      {/* Category Tabs */}
+      <div style={tabsContainerStyle}>
+        {categories.map((cat) => (
+          <button
+            key={cat.id}
+            onClick={() => handleCategorySelect(cat.id)}
+            style={{
+              ...tabButtonStyle,
+              ...(selectedCategory === cat.id ? activeTabStyle : {}),
+            }}
+          >
+            {cat.name}
+          </button>
+        ))}
+      </div>
+
       <div className="service-cards">
-        {services.map((service) => (
+        {filteredServices.length === 0 && <p>No services available in this category.</p>}
+        {filteredServices.map((service) => (
           <div key={service.id} style={cardStyle}>
             <div style={infoStyle}>
               <h3 style={{ margin: 0 }}>{service.name}</h3>
@@ -117,7 +162,7 @@ const fetchProviders = async (serviceId) => {
           </div>
         ))}
       </div>
-  
+
       {selectedService && (
         <div className="provider-selection" style={{ marginTop: "24px" }}>
           <h3 style={{ marginBottom: "12px" }}>Choose a Provider</h3>
@@ -138,10 +183,13 @@ const fetchProviders = async (serviceId) => {
                 </button>
               </div>
             ))}
+            {(!providers[selectedService.id] || providers[selectedService.id].length === 0) && (
+              <p>No providers available for this service.</p>
+            )}
           </div>
         </div>
       )}
-  
+
       {selectedProvider && (
         <div className="time-selection" style={{ marginTop: "24px" }}>
           <h3 style={{ marginBottom: "12px" }}>Choose a Time</h3>
@@ -163,7 +211,7 @@ const fetchProviders = async (serviceId) => {
           </div>
         </div>
       )}
-  
+
       {selectedProvider && selectedTime && (
         <div style={{ marginTop: "24px" }}>
           <button onClick={handleAddToCart} style={addToCartStyle}>
@@ -173,26 +221,48 @@ const fetchProviders = async (serviceId) => {
       )}
     </div>
   );
-  
-  
-}
+};
+
+const tabsContainerStyle = {
+  display: "flex",
+  gap: "12px",
+  marginBottom: "20px",
+  flexWrap: "wrap",
+};
+
+const tabButtonStyle = {
+  padding: "8px 16px",
+  borderRadius: "6px",
+  border: "1px solid #007bff",
+  backgroundColor: "#fff",
+  color: "#007bff",
+  cursor: "pointer",
+  fontSize: "1rem",
+  transition: "all 0.3s ease",
+};
+
+const activeTabStyle = {
+  backgroundColor: "#007bff",
+  color: "#fff",
+};
+
 const cardStyle = {
   display: "flex",
   justifyContent: "space-between",
-  alignItems: "center", // fix vertical alignment
+  alignItems: "center",
   padding: "12px 16px",
   marginBottom: "12px",
   border: "1px solid #e0e0e0",
   borderRadius: "8px",
   backgroundColor: "#fff",
   boxShadow: "0 1px 3px rgba(0, 0, 0, 0.05)",
-  flexWrap: "wrap", // Prevent overflow on smaller screens
+  flexWrap: "wrap",
 };
 
 const infoStyle = {
   flexGrow: 1,
   marginRight: "16px",
-  minWidth: 0, // allows content to shrink naturally
+  minWidth: 0,
 };
 
 const buttonStyle = {
@@ -205,9 +275,9 @@ const buttonStyle = {
   cursor: "pointer",
   whiteSpace: "nowrap",
   fontSize: "0.9rem",
-  alignSelf: "flex-end", // Align the button to the right
-  flexShrink: 0, // Prevents shrinking on small screens
-  marginTop: "8px", // Adds some space from the bottom
+  alignSelf: "flex-end",
+  flexShrink: 0,
+  marginTop: "8px",
 };
 
 const providerGrid = {
@@ -224,16 +294,16 @@ const providerCardStyle = {
   border: "1px solid #ddd",
   borderRadius: "6px",
   backgroundColor: "#fafafa",
-  flexDirection: "row", // Ensure the provider name and button are in line
-  gap: "8px", // Space between provider name and button
+  flexDirection: "row",
+  gap: "8px",
 };
 
 const smallButtonStyle = {
   ...buttonStyle,
   padding: "6px 12px",
   fontSize: "0.85rem",
-  alignSelf: "flex-end", // Align to the right within the provider card
-  marginTop: "4px", // Adds spacing for visual clarity
+  alignSelf: "flex-end",
+  marginTop: "4px",
 };
 
 const timeGrid = {
@@ -260,7 +330,5 @@ const addToCartStyle = {
   fontSize: "1rem",
   cursor: "pointer",
 };
-
-
 
 export default ServiceList;
