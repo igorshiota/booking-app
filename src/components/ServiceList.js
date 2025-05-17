@@ -263,9 +263,4 @@ const addToCartStyle = {
 
 
 
-
-  
-  
-  
-
 export default ServiceList;
