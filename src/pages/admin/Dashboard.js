@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { db } from "../../firebaseConfig";
-import { collection, addDoc, getDocs, doc, updateDoc } from "firebase/firestore";
+import { db, storage } from "../../firebaseConfig";
+import { collection, addDoc, getDocs, doc, updateDoc, setDoc } from "firebase/firestore";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 const Dashboard = () => {
   const [services, setServices] = useState([]);
@@ -8,6 +9,9 @@ const Dashboard = () => {
   const [newService, setNewService] = useState({ name: "", description: "", duration: "", price: "", staff: [] });
   const [newStaff, setNewStaff] = useState({ name: "", availableTimes: [], serviceIds: [] });
   const [availableTimesInput, setAvailableTimesInput] = useState("");
+  const [activeSection, setActiveSection] = useState("addService");
+  const [logoFile, setLogoFile] = useState(null);
+  const [bgFile, setBgFile] = useState(null);
 
   useEffect(() => {
     fetchServices();
@@ -15,260 +19,281 @@ const Dashboard = () => {
   }, []);
 
   const fetchServices = async () => {
-    const servicesSnapshot = await getDocs(collection(db, "services"));
-    const servicesList = servicesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    setServices(servicesList);
+    const snapshot = await getDocs(collection(db, "services"));
+    const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    setServices(list);
   };
 
   const fetchStaff = async () => {
-    const staffSnapshot = await getDocs(collection(db, "providers"));
-    const staffList = staffSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    setStaff(staffList);
+    const snapshot = await getDocs(collection(db, "providers"));
+    const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    setStaff(list);
   };
 
   const handleAddService = async () => {
-    const newServiceDoc = await addDoc(collection(db, "services"), {
-      name: newService.name,
-      description: newService.description,
-      duration: newService.duration,
-      price: newService.price,
-      staff: newService.staff
-    });
-
-    // Update staff documents to include this new service
+    const newDoc = await addDoc(collection(db, "services"), newService);
     for (const staffId of newService.staff) {
-      const staffRef = doc(db, "providers", staffId);
-      const staffMember = staff.find(s => s.id === staffId);
-      if (staffMember) {
-        const updatedServices = staffMember.serviceIds ? [...staffMember.serviceIds, newServiceDoc.id] : [newServiceDoc.id];
-        await updateDoc(staffRef, { serviceIds: updatedServices });
+      const refDoc = doc(db, "providers", staffId);
+      const member = staff.find(s => s.id === staffId);
+      if (member) {
+        const updated = member.serviceIds ? [...member.serviceIds, newDoc.id] : [newDoc.id];
+        await updateDoc(refDoc, { serviceIds: updated });
       }
     }
-
     setNewService({ name: "", description: "", duration: "", price: "", staff: [] });
     fetchServices();
     fetchStaff();
   };
 
   const handleAddStaff = async () => {
-    const timesArray = availableTimesInput.split(",").map(time => time.trim());
-    const newStaffDoc = await addDoc(collection(db, "providers"), {
+    const times = availableTimesInput.split(",").map(t => t.trim());
+    const newDoc = await addDoc(collection(db, "providers"), {
       name: newStaff.name,
-      availableTimes: timesArray,
+      availableTimes: times,
       serviceIds: newStaff.serviceIds
     });
-
-    // Update services to include this staff if needed
     for (const serviceId of newStaff.serviceIds) {
-      const serviceRef = doc(db, "services", serviceId);
+      const refDoc = doc(db, "services", serviceId);
       const service = services.find(s => s.id === serviceId);
       if (service) {
-        const updatedStaff = service.staff ? [...service.staff, newStaffDoc.id] : [newStaffDoc.id];
-        await updateDoc(serviceRef, { staff: updatedStaff });
+        const updated = service.staff ? [...service.staff, newDoc.id] : [newDoc.id];
+        await updateDoc(refDoc, { staff: updated });
       }
     }
-
     setNewStaff({ name: "", availableTimes: [], serviceIds: [] });
     setAvailableTimesInput("");
     fetchServices();
     fetchStaff();
   };
 
-  const handleStaffCheckboxChange = (staffId) => {
-    setNewService(prevState => ({
-      ...prevState,
-      staff: prevState.staff.includes(staffId)
-        ? prevState.staff.filter(id => id !== staffId)
-        : [...prevState.staff, staffId]
+  const handleStaffCheckbox = (id) => {
+    setNewService(prev => ({
+      ...prev,
+      staff: prev.staff.includes(id) ? prev.staff.filter(s => s !== id) : [...prev.staff, id]
     }));
   };
 
-  const handleServiceCheckboxChange = (serviceId) => {
-    setNewStaff(prevState => ({
-      ...prevState,
-      serviceIds: prevState.serviceIds.includes(serviceId)
-        ? prevState.serviceIds.filter(id => id !== serviceId)
-        : [...prevState.serviceIds, serviceId]
+  const handleServiceCheckbox = (id) => {
+    setNewStaff(prev => ({
+      ...prev,
+      serviceIds: prev.serviceIds.includes(id) ? prev.serviceIds.filter(s => s !== id) : [...prev.serviceIds, id]
     }));
   };
+
+  const uploadImage = async (file, path) => {
+    const storageRef = ref(storage, path);
+    await uploadBytes(storageRef, file);
+    return await getDownloadURL(storageRef);
+  };
+
+
+const handleLogoUpload = async () => {
+    if (!logoFile) return alert("Please select a logo file first.");
+    try {
+      const url = await uploadImage(logoFile, "businessSettings/logo.png");
+      await setDoc(doc(db, "businessSettings", "branding"), { logoUrl: url }, { merge: true });
+      alert("Logo uploaded successfully!");
+      setLogoFile(null);
+    } catch (error) {
+      alert("Error uploading logo: " + error.message);
+    }
+  };
+  
+  const handleBgUpload = async () => {
+    if (!bgFile) return alert("Please select a background image file first.");
+    try {
+      const url = await uploadImage(bgFile, "businessSettings/background.png");
+      await setDoc(doc(db, "businessSettings", "branding"), { bgImageUrl: url }, { merge: true });
+      alert("Background image uploaded successfully!");
+      setBgFile(null);
+    } catch (error) {
+      alert("Error uploading background image: " + error.message);
+    }
+  };
+  
 
   return (
-    <div style={styles.container}>
-      <h2>Admin Dashboard</h2>
-      <div style={styles.formContainer}>
-        {/* Add New Service */}
-        <div style={styles.formSection}>
-          <h3>Add New Service</h3>
-          <input
-            type="text"
-            placeholder="Service Name"
-            value={newService.name}
-            onChange={(e) => setNewService({ ...newService, name: e.target.value })}
-            style={styles.input}
-          />
-          <input
-            type="text"
-            placeholder="Service Description"
-            value={newService.description}
-            onChange={(e) => setNewService({ ...newService, description: e.target.value })}
-            style={styles.input}
-          />
-          <input
-            type="text"
-            placeholder="Service Duration (mins)"
-            value={newService.duration}
-            onChange={(e) => setNewService({ ...newService, duration: e.target.value })}
-            style={styles.input}
-          />
-          <input
-            type="number"
-            placeholder="Service Price"
-            value={newService.price}
-            onChange={(e) => setNewService({ ...newService, price: e.target.value })}
-            style={styles.input}
-          />
-          <div>
-            <h4>Assign Staff</h4>
-            {staff.map((member) => (
-              <label key={member.id}>
-                <input
-                  type="checkbox"
-                  checked={newService.staff.includes(member.id)}
-                  onChange={() => handleStaffCheckboxChange(member.id)}
-                />
-                {member.name}
-              </label>
+    <div style={styles.wrapper}>
+      <aside style={styles.sidebar}>
+        <h2 style={styles.sidebarTitle}>Dashboard</h2>
+        <button style={styles.navButton} onClick={() => setActiveSection("addService")}>Add Service</button>
+        <button style={styles.navButton} onClick={() => setActiveSection("addStaff")}>Add Staff</button>
+        <button style={styles.navButton} onClick={() => setActiveSection("uploadLogo")}>Upload Logo</button>
+        <button style={styles.navButton} onClick={() => setActiveSection("uploadBackground")}>Upload Background</button>
+      </aside>
+
+      <main style={styles.main}>
+        <h2 style={styles.heading}>Admin Dashboard</h2>
+
+        <div style={styles.forms}>
+          {activeSection === "addService" && (
+            <div style={styles.formBox}>
+              <h3>Add New Service</h3>
+              <input placeholder="Service Name" value={newService.name} onChange={(e) => setNewService({ ...newService, name: e.target.value })} style={styles.input} />
+              <input placeholder="Description" value={newService.description} onChange={(e) => setNewService({ ...newService, description: e.target.value })} style={styles.input} />
+              <input placeholder="Duration (mins)" value={newService.duration} onChange={(e) => setNewService({ ...newService, duration: e.target.value })} style={styles.input} />
+              <input placeholder="Price (€)" type="number" value={newService.price} onChange={(e) => setNewService({ ...newService, price: e.target.value })} style={styles.input} />
+              <div style={styles.checkboxGroup}>
+                <p>Assign Staff:</p>
+                {staff.map(member => (
+                  <label key={member.id} style={styles.checkboxLabel}>
+                    <input type="checkbox" checked={newService.staff.includes(member.id)} onChange={() => handleStaffCheckbox(member.id)} />
+                    {member.name}
+                  </label>
+                ))}
+              </div>
+              <button style={styles.button} onClick={handleAddService}>Add Service</button>
+            </div>
+          )}
+
+          {activeSection === "addStaff" && (
+            <div style={styles.formBox}>
+              <h3>Add New Staff</h3>
+              <input placeholder="Staff Name" value={newStaff.name} onChange={(e) => setNewStaff({ ...newStaff, name: e.target.value })} style={styles.input} />
+              <input placeholder="Available Times (comma separated)" value={availableTimesInput} onChange={(e) => setAvailableTimesInput(e.target.value)} style={styles.input} />
+              <div style={styles.checkboxGroup}>
+                <p>Assign Services:</p>
+                {services.map(service => (
+                  <label key={service.id} style={styles.checkboxLabel}>
+                    <input type="checkbox" checked={newStaff.serviceIds.includes(service.id)} onChange={() => handleServiceCheckbox(service.id)} />
+                    {service.name}
+                  </label>
+                ))}
+              </div>
+              <button style={styles.button} onClick={handleAddStaff}>Add Staff</button>
+            </div>
+          )}
+
+          {activeSection === "uploadLogo" && (
+            <div style={styles.formBox}>
+              <h3>Upload Logo</h3>
+              <input type="file" accept="image/*" onChange={(e) => setLogoFile(e.target.files[0])} style={styles.input} />
+              <button style={styles.button} onClick={handleLogoUpload}>Upload Logo</button>
+            </div>
+          )}
+
+          {activeSection === "uploadBackground" && (
+            <div style={styles.formBox}>
+              <h3>Upload Background Image</h3>
+              <input type="file" accept="image/*" onChange={(e) => setBgFile(e.target.files[0])} style={styles.input} />
+              <button style={styles.button} onClick={handleBgUpload}>Upload Background</button>
+            </div>
+          )}
+        </div>
+
+        <div style={styles.lists}>
+          <div style={styles.list}>
+            <h3>Services</h3>
+            {services.map(service => (
+              <div key={service.id} style={styles.card}>
+                <strong>{service.name}</strong>
+                <p>{service.description}</p>
+                <p>Duration: {service.duration} mins</p>
+                <p>Price: €{service.price}</p>
+                <p>Staff: {service.staff?.map(id => staff.find(s => s.id === id)?.name || "Unknown").join(", ") || "None"}</p>
+              </div>
             ))}
           </div>
-          <button onClick={handleAddService} style={styles.button}>Add Service</button>
-        </div>
-
-        {/* Add New Staff */}
-        <div style={styles.formSection}>
-          <h3>Add New Staff</h3>
-          <input
-            type="text"
-            placeholder="Staff Name"
-            value={newStaff.name}
-            onChange={(e) => setNewStaff({ ...newStaff, name: e.target.value })}
-            style={styles.input}
-          />
-          <input
-            type="text"
-            placeholder="Available Times (comma separated)"
-            value={availableTimesInput}
-            onChange={(e) => setAvailableTimesInput(e.target.value)}
-            style={styles.input}
-          />
-          <div>
-            <h4>Assign Services</h4>
-            {services.map((service) => (
-              <label key={service.id}>
-                <input
-                  type="checkbox"
-                  checked={newStaff.serviceIds.includes(service.id)}
-                  onChange={() => handleServiceCheckboxChange(service.id)}
-                />
-                {service.name}
-              </label>
+          <div style={styles.list}>
+            <h3>Staff</h3>
+            {staff.map(member => (
+              <div key={member.id} style={styles.card}>
+                <strong>{member.name}</strong>
+                <p>Available: {member.availableTimes?.join(", ") || "N/A"}</p>
+                <p>Services: {member.serviceIds?.map(id => services.find(s => s.id === id)?.name || "Unknown").join(", ") || "None"}</p>
+              </div>
             ))}
           </div>
-          <button onClick={handleAddStaff} style={styles.button}>Add Staff</button>
         </div>
-      </div>
-
-      {/* Lists */}
-      <div style={styles.listsContainer}>
-        {/* Services List */}
-        <div style={styles.listSection}>
-          <h3>Services</h3>
-          {services.map((service) => (
-            <div key={service.id} style={styles.card}>
-              <h4>{service.name}</h4>
-              <p>{service.description}</p>
-              <p>Duration: {service.duration} mins</p>
-              <p>Price: €{service.price}</p>
-              <p>
-                Staff:{" "}
-                {Array.isArray(service.staff) && service.staff.length > 0
-                  ? service.staff.map(staffId => {
-                      const staffMember = staff.find(s => s.id === staffId);
-                      return staffMember ? staffMember.name : "Unknown";
-                    }).join(", ")
-                  : "No Staff Assigned"}
-              </p>
-            </div>
-          ))}
-        </div>
-
-        {/* Staff List */}
-        <div style={styles.listSection}>
-          <h3>Staff</h3>
-          {staff.map((member) => (
-            <div key={member.id} style={styles.card}>
-              <h4>{member.name}</h4>
-              <p>Available Times: {Array.isArray(member.availableTimes) ? member.availableTimes.join(", ") : "N/A"}</p>
-              <p>
-                Services:{" "}
-                {Array.isArray(member.serviceIds) && member.serviceIds.length > 0
-                  ? member.serviceIds.map(serviceId => {
-                      const service = services.find(s => s.id === serviceId);
-                      return service ? service.name : "Unknown";
-                    }).join(", ")
-                  : "No Services Assigned"}
-              </p>
-            </div>
-          ))}
-        </div>
-      </div>
+      </main>
     </div>
   );
 };
 
 const styles = {
-  container: {
+  wrapper: {
+    display: "flex",
+    fontFamily: "Arial, sans-serif",
+    minHeight: "100vh",
+  },
+  sidebar: {
+    width: "220px",
+    backgroundColor: "#2c3e50",
+    color: "#fff",
     padding: "20px",
   },
-  formContainer: {
-    display: "flex",
-    gap: "20px",
+  sidebarTitle: {
+    fontSize: "20px",
+    marginBottom: "20px",
+  },
+  navButton: {
+    display: "block",
+    background: "transparent",
+    border: "none",
+    color: "#ecf0f1",
+    padding: "10px 0",
+    cursor: "pointer",
+    textAlign: "left",
+    width: "100%",
+    fontSize: "16px",
+  },
+  main: {
+    flex: 1,
+    padding: "30px",
+    backgroundColor: "#f9f9f9",
+  },
+  heading: {
+    marginBottom: "30px",
+  },
+  forms: {
     marginBottom: "40px",
   },
-  formSection: {
-    flex: 1,
-    display: "flex",
-    flexDirection: "column",
-    gap: "10px",
-    border: "1px solid #ccc",
+  formBox: {
+    backgroundColor: "#fff",
     padding: "20px",
     borderRadius: "8px",
+    boxShadow: "0 0 8px rgba(0,0,0,0.1)",
+    maxWidth: "500px",
   },
   input: {
-    padding: "8px",
+    width: "50%",
+    padding: "10px",
+    marginBottom: "15px",
     borderRadius: "4px",
     border: "1px solid #ccc",
+    fontSize: "14px",
+  },
+  checkboxGroup: {
+    marginBottom: "15px",
+  },
+  checkboxLabel: {
+    display: "block",
+    marginBottom: "5px",
+    fontSize: "14px",
   },
   button: {
-    padding: "10px",
-    backgroundColor: "#4CAF50",
+    backgroundColor: "#27ae60",
     color: "white",
     border: "none",
-    borderRadius: "4px",
+    padding: "12px 20px",
     cursor: "pointer",
+    borderRadius: "4px",
+    fontSize: "16px",
   },
-  listsContainer: {
+  lists: {
     display: "flex",
-    gap: "20px",
+    gap: "40px",
   },
-  listSection: {
+  list: {
     flex: 1,
   },
   card: {
-    border: "1px solid #ccc",
+    backgroundColor: "#fff",
     padding: "15px",
-    borderRadius: "8px",
-    marginBottom: "10px",
-  },
+    marginBottom: "15px",
+    borderRadius: "6px",
+    boxShadow: "0 0 6px rgba(0,0,0,0.05)",
+  }
 };
 
 export default Dashboard;
