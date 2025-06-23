@@ -27,8 +27,19 @@ const Dashboard = () => {
   const [logoFile, setLogoFile] = useState(null);
   const [bgFile, setBgFile] = useState(null);
 
+  // State for responsive
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+
   useEffect(() => {
     fetchAllData();
+
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+
+    window.addEventListener("resize", handleResize);
+
+    return () => window.removeEventListener("resize", handleResize);
   }, []);
 
   const fetchAllData = async () => {
@@ -165,28 +176,77 @@ const Dashboard = () => {
     }
   };
 
+  // Responsive overrides
+  const responsiveStyles = {
+    wrapper: {
+      flexDirection: "column",
+    },
+    sidebar: {
+      width: "unset",
+      flexDirection: "row",
+      flexWrap: "wrap",
+      justifyContent: "space-around",
+      padding: 10,
+    },
+    main: {
+      padding: 20,
+      width: "unset",
+    },
+    formBox: {
+      width: "100%",
+      padding: 15,
+    },
+    input: {
+      width: "100%",
+    },
+    textarea: {
+      width: "100%",
+    },
+    row: {
+      flexDirection: "column",
+    },
+    column: {
+      width: "100%",
+      marginBottom: 20,
+    },
+    navButton: {
+      flex: "1 0 45%",
+      marginBottom: 10,
+      fontSize: 14,
+      padding: 8,
+    }
+  };
+
+  // Helper to merge styles (normal + responsive)
+  const getStyle = (styleName) => {
+    if (isMobile) {
+      return { ...styles[styleName], ...responsiveStyles[styleName] };
+    }
+    return styles[styleName];
+  };
+
   return (
-    <div style={styles.wrapper}>
-      <aside style={styles.sidebar}>
+    <div style={getStyle("wrapper")}>
+      <aside style={getStyle("sidebar")}>
         <h2 style={styles.sidebarTitle}>Dashboard</h2>
-        <button style={styles.navButton} onClick={() => setActiveSection("addService")}>Add Service</button>
-        <button style={styles.navButton} onClick={() => setActiveSection("addStaff")}>Add Staff</button>
-        <button style={styles.navButton} onClick={() => setActiveSection("uploadLogo")}>Upload Logo</button>
-        <button style={styles.navButton} onClick={() => setActiveSection("uploadBackground")}>Upload Background</button>
-        <button style={styles.navButton} onClick={() => setActiveSection("manageCategories")}>Manage Categories</button>
+        <button style={getStyle("navButton")} onClick={() => setActiveSection("addService")}>Add Service</button>
+        <button style={getStyle("navButton")} onClick={() => setActiveSection("addStaff")}>Add Staff</button>
+        <button style={getStyle("navButton")} onClick={() => setActiveSection("uploadLogo")}>Upload Logo</button>
+        <button style={getStyle("navButton")} onClick={() => setActiveSection("uploadBackground")}>Upload Background</button>
+        <button style={getStyle("navButton")} onClick={() => setActiveSection("manageCategories")}>Manage Categories</button>
       </aside>
 
-      <main style={styles.main}>
+      <main style={getStyle("main")}>
         <h2 style={styles.heading}>Admin Dashboard</h2>
 
         {activeSection === "addService" && (
-          <div style={styles.formBox}>
+          <div style={getStyle("formBox")}>
             <h3>Add New Service</h3>
-            <input placeholder="Service Name" value={newService.name} onChange={(e) => setNewService({ ...newService, name: e.target.value })} style={styles.input} />
-            <input placeholder="Description" value={newService.description} onChange={(e) => setNewService({ ...newService, description: e.target.value })} style={styles.input} />
-            <input placeholder="Duration (mins)" value={newService.duration} onChange={(e) => setNewService({ ...newService, duration: e.target.value })} style={styles.input} />
-            <input placeholder="Price (€)" type="number" value={newService.price} onChange={(e) => setNewService({ ...newService, price: e.target.value })} style={styles.input} />
-            <select value={newService.categoryId} onChange={(e) => setNewService({ ...newService, categoryId: e.target.value })} style={styles.input}>
+            <input placeholder="Service Name" value={newService.name} onChange={(e) => setNewService({ ...newService, name: e.target.value })} style={getStyle("input")} />
+            <input placeholder="Description" value={newService.description} onChange={(e) => setNewService({ ...newService, description: e.target.value })} style={getStyle("input")} />
+            <input placeholder="Duration (mins)" value={newService.duration} onChange={(e) => setNewService({ ...newService, duration: e.target.value })} style={getStyle("input")} />
+            <input placeholder="Price (€)" type="number" value={newService.price} onChange={(e) => setNewService({ ...newService, price: e.target.value })} style={getStyle("input")} />
+            <select value={newService.categoryId} onChange={(e) => setNewService({ ...newService, categoryId: e.target.value })} style={getStyle("input")}>
               <option value="">Select Category</option>
               {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
             </select>
@@ -199,15 +259,15 @@ const Dashboard = () => {
                 </label>
               ))}
             </div>
-            <button style={styles.button} onClick={handleAddService}>Add Service</button>
+            <button style={getStyle("button")} onClick={handleAddService}>Add Service</button>
           </div>
         )}
 
         {activeSection === "addStaff" && (
-          <div style={styles.formBox}>
+          <div style={getStyle("formBox")}>
             <h3>Add New Staff</h3>
-            <input placeholder="Staff Name" value={newStaff.name} onChange={(e) => setNewStaff({ ...newStaff, name: e.target.value })} style={styles.input} />
-            <textarea placeholder="Available Times (comma separated)" value={availableTimesInput} onChange={(e) => setAvailableTimesInput(e.target.value)} style={styles.textarea} />
+            <input placeholder="Staff Name" value={newStaff.name} onChange={(e) => setNewStaff({ ...newStaff, name: e.target.value })} style={getStyle("input")} />
+            <textarea placeholder="Available Times (comma separated)" value={availableTimesInput} onChange={(e) => setAvailableTimesInput(e.target.value)} style={getStyle("textarea")} />
             <div style={styles.checkboxGroup}>
               <p>Assign Services:</p>
               {services.map(service => (
@@ -217,31 +277,31 @@ const Dashboard = () => {
                 </label>
               ))}
             </div>
-            <button style={styles.button} onClick={handleAddStaff}>Add Staff</button>
+            <button style={getStyle("button")} onClick={handleAddStaff}>Add Staff</button>
           </div>
         )}
 
         {activeSection === "uploadLogo" && (
-          <div style={styles.formBox}>
+          <div style={getStyle("formBox")}>
             <h3>Upload Logo</h3>
             <input type="file" accept="image/*" onChange={(e) => setLogoFile(e.target.files[0])} />
-            <button style={styles.button} onClick={handleLogoUpload}>Upload Logo</button>
+            <button style={getStyle("button")} onClick={handleLogoUpload}>Upload Logo</button>
           </div>
         )}
 
         {activeSection === "uploadBackground" && (
-          <div style={styles.formBox}>
+          <div style={getStyle("formBox")}>
             <h3>Upload Background Image</h3>
             <input type="file" accept="image/*" onChange={(e) => setBgFile(e.target.files[0])} />
-            <button style={styles.button} onClick={handleBgUpload}>Upload Background</button>
+            <button style={getStyle("button")} onClick={handleBgUpload}>Upload Background</button>
           </div>
         )}
 
         {activeSection === "manageCategories" && (
-          <div style={styles.formBox}>
+          <div style={getStyle("formBox")}>
             <h3>Manage Categories</h3>
-            <input placeholder="New Category Name" value={newCategoryName} onChange={(e) => setNewCategoryName(e.target.value)} style={styles.input} />
-            <button style={styles.button} onClick={handleAddCategory}>Add Category</button>
+            <input placeholder="New Category Name" value={newCategoryName} onChange={(e) => setNewCategoryName(e.target.value)} style={getStyle("input")} />
+            <button style={getStyle("button")} onClick={handleAddCategory}>Add Category</button>
             <div style={styles.cardList}>
               {categories.map(cat => (
                 <div key={cat.id} style={styles.card}>
@@ -252,8 +312,8 @@ const Dashboard = () => {
           </div>
         )}
 
-        <div style={styles.row}>
-          <div style={styles.column}>
+        <div style={getStyle("row")}>
+          <div style={getStyle("column")}>
             <h3>Staff</h3>
             {staff.map((s) => (
               <div key={s.id} style={styles.card}>
@@ -264,7 +324,7 @@ const Dashboard = () => {
             ))}
           </div>
 
-          <div style={styles.column}>
+          <div style={getStyle("column")}>
             <h3>Categories</h3>
             {categories.map((cat) => (
               <div key={cat.id} style={styles.card}>
@@ -273,7 +333,7 @@ const Dashboard = () => {
             ))}
           </div>
 
-          <div style={styles.column}>
+          <div style={getStyle("column")}>
             <h3>Services</h3>
             {services.map((srv) => (
               <div key={srv.id} style={styles.card}>
@@ -298,7 +358,7 @@ const styles = {
   sidebar: {
     backgroundColor: "#007bff",
     padding: "20px",
-    width: "250px",
+    width: "unset",
     color: "#fff",
     display: "flex",
     flexDirection: "column",
@@ -319,8 +379,10 @@ const styles = {
   },
   main: {
     flexGrow: 1,
-    padding: "30px"
+    padding: "30px",
+    width: "unset"
   },
+
   heading: {
     fontSize: "28px",
     marginBottom: "25px"
@@ -332,6 +394,7 @@ const styles = {
     boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
     marginBottom: "30px",
     width: "30%",
+    boxSizing: "border-box"  
   },
   input: {
     display: "block",
@@ -340,7 +403,8 @@ const styles = {
     marginBottom: "12px",
     borderRadius: "6px",
     border: "1px solid #ccc",
-    fontSize: "16px"
+    fontSize: "16px",
+    boxSizing: "border-box"  
   },
   textarea: {
     display: "block",
@@ -350,7 +414,8 @@ const styles = {
     marginBottom: "12px",
     borderRadius: "6px",
     border: "1px solid #ccc",
-    fontSize: "16px"
+    fontSize: "16px",
+    boxSizing: "border-box"
   },
   button: {
     padding: "12px 18px",
@@ -384,6 +449,7 @@ const styles = {
     marginBottom: "10px",
     borderRadius: "8px",
     boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
+    boxSizing: "border-box"
   },
   
 };
