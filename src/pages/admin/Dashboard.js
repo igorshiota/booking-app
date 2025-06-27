@@ -3,6 +3,38 @@ import { db, storage } from "../../firebaseConfig";
 import { collection, addDoc, getDocs, doc, updateDoc, setDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
+const fontMeta = {
+  "Open Sans": {
+    url: "https://fonts.googleapis.com/css2?family=Open+Sans&display=swap",
+    family: "'Open Sans', sans-serif"
+  },
+  "Dancing Script": {
+    url: "https://fonts.googleapis.com/css2?family=Dancing+Script&display=swap",
+    family: "'Dancing Script', cursive"
+  },
+  "Roboto": {
+    url: "https://fonts.googleapis.com/css2?family=Roboto&display=swap",
+    family: "'Roboto', sans-serif"
+  },
+  "Lora": {
+    url: "https://fonts.googleapis.com/css2?family=Lora&display=swap",
+    family: "'Lora', serif"
+  },
+  "Merriweather": {
+    url: "https://fonts.googleapis.com/css2?family=Merriweather&display=swap",
+    family: "'Merriweather', serif"
+  },
+  "Playfair Display": {
+    url: "https://fonts.googleapis.com/css2?family=Playfair+Display&display=swap",
+    family: "'Playfair Display', serif"
+  },
+  "Poppins": {
+    url: "https://fonts.googleapis.com/css2?family=Poppins&display=swap",
+    family: "'Poppins', sans-serif"
+  }
+};
+
+
 const Dashboard = () => {
   const [services, setServices] = useState([]);
   const [staff, setStaff] = useState([]);
@@ -26,6 +58,8 @@ const Dashboard = () => {
   const [activeSection, setActiveSection] = useState("addService");
   const [logoFile, setLogoFile] = useState(null);
   const [bgFile, setBgFile] = useState(null);
+  const [headingFont, setHeadingFont] = useState("Open Sans");
+  const [bodyFont, setBodyFont] = useState("Open Sans");
 
   // State for responsive
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
@@ -176,6 +210,21 @@ const Dashboard = () => {
     }
   };
 
+  const handleSaveFonts = async () => {
+  try {
+    await setDoc(doc(db, "businessSettings", "branding"), {
+      headingFont: fontMeta[headingFont].url,
+      headingFontFamily: fontMeta[headingFont].family,
+      bodyFont: fontMeta[bodyFont].url,
+      bodyFontFamily: fontMeta[bodyFont].family
+    }, { merge: true });
+    alert("Fonts updated successfully!");
+  } catch (error) {
+    alert("Failed to update fonts: " + error.message);
+  }
+};
+
+
   // Responsive overrides
   const responsiveStyles = {
     wrapper: {
@@ -234,6 +283,8 @@ const Dashboard = () => {
         <button style={getStyle("navButton")} onClick={() => setActiveSection("uploadLogo")}>Upload Logo</button>
         <button style={getStyle("navButton")} onClick={() => setActiveSection("uploadBackground")}>Upload Background</button>
         <button style={getStyle("navButton")} onClick={() => setActiveSection("manageCategories")}>Manage Categories</button>
+        <button style={getStyle("navButton")} onClick={() => setActiveSection("changeFonts")}>Change Fonts</button>
+
       </aside>
 
       <main style={getStyle("main")}>
@@ -311,6 +362,42 @@ const Dashboard = () => {
             </div>
           </div>
         )}
+
+         {activeSection === "changeFonts" && (
+          <div style={styles.formBox}>
+            <h3>Change Fonts</h3>
+            <label>Heading Font:</label>
+            <select
+              value={headingFont}
+              onChange={(e) => setHeadingFont(e.target.value)}
+              style={styles.input}
+            >
+              {Object.keys(fontMeta).map((font) => (
+                <option key={font} value={font}>
+                  {font}
+                </option>
+              ))}
+            </select>
+
+            <label>Body Font:</label>
+            <select
+              value={bodyFont}
+              onChange={(e) => setBodyFont(e.target.value)}
+              style={styles.input}
+            >
+              {Object.keys(fontMeta).map((font) => (
+                <option key={font} value={font}>
+                  {font}
+                </option>
+              ))}
+            </select>
+
+            <button style={styles.button} onClick={handleSaveFonts}>
+              Save Font Settings
+            </button>
+          </div>
+        )}
+
 
         <div style={getStyle("row")}>
           <div style={getStyle("column")}>
