@@ -181,34 +181,64 @@ const Dashboard = () => {
   };
 
   const handleLogoUpload = async () => {
-    if (!logoFile) {
-      alert("Please select a logo file first.");
-      return;
-    }
-    try {
-      const url = await uploadImage(logoFile, "businessSettings/logo.png");
-      await setDoc(doc(db, "businessSettings", "branding"), { logoUrl: url }, { merge: true });
-      alert("Logo uploaded successfully!");
-      setLogoFile(null);
-    } catch (error) {
-      alert("Error uploading logo: " + error.message);
-    }
-  };
+  if (!logoFile) {
+    alert("Please select a logo file first.");
+    return;
+  }
 
-  const handleBgUpload = async () => {
-    if (!bgFile) {
-      alert("Please select a background image file first.");
-      return;
-    }
-    try {
-      const url = await uploadImage(bgFile, "businessSettings/background.png");
-      await setDoc(doc(db, "businessSettings", "branding"), { bgImageUrl: url }, { merge: true });
-      alert("Background image uploaded successfully!");
-      setBgFile(null);
-    } catch (error) {
-      alert("Error uploading background image: " + error.message);
-    }
-  };
+  const formData = new FormData();
+  formData.append("image", logoFile);
+
+  try {
+    const response = await fetch("http://localhost:8080/upload", {
+      method: "POST",
+      body: formData,
+    });
+
+    const data = await response.json();
+    const imageUrl = data.url; // e.g., /images/filename.png
+
+    await setDoc(doc(db, "businessSettings", "branding"), {
+      logoUrl: imageUrl,
+    }, { merge: true });
+
+    alert("Logo uploaded successfully!");
+    setLogoFile(null);
+  } catch (error) {
+    alert("Error uploading logo: " + error.message);
+  }
+};
+
+
+const handleBgUpload = async () => {
+  if (!bgFile) {
+    alert("Please select a background image file first.");
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append("image", bgFile);
+
+  try {
+    const response = await fetch("http://localhost:8080/upload", {
+      method: "POST",
+      body: formData,
+    });
+
+    const data = await response.json();
+    const imageUrl = data.url;
+
+    await setDoc(doc(db, "businessSettings", "branding"), {
+      bgImageUrl: imageUrl,
+    }, { merge: true });
+
+    alert("Background image uploaded successfully!");
+    setBgFile(null);
+  } catch (error) {
+    alert("Error uploading background image: " + error.message);
+  }
+};
+
 
   const handleSaveFonts = async () => {
   try {

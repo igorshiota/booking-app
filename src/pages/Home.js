@@ -12,6 +12,8 @@ const Home = () => {
   const [selectedTime, setSelectedTime] = useState(null);
   const [settings, setSettings] = useState(null);
 
+  const SERVER_BASE_URL = "http://localhost:8080";
+
   useEffect(() => {
     const fetchSettings = async () => {
       const ref = doc(db, "businessSettings", "branding");
@@ -69,14 +71,23 @@ const Home = () => {
     setCart([...cart, { ...service, provider, timeSlot }]);
   };
 
+
+
+  const getImageUrl = (url) => {
+    if (!url) return null;
+    if (url.startsWith("http://") || url.startsWith("https://")) return url;
+    return SERVER_BASE_URL + url;
+  };
+
   const backgroundStyle = {
     backgroundImage: settings?.bgImageUrl
-      ? `linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url(${settings.bgImageUrl})`
+      ? `linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url(${getImageUrl(settings.bgImageUrl)})`
       : "none",
     backgroundSize: "cover",
     backgroundPosition: "center",
     minHeight: "100vh",
   };
+
 
   const styles = {
     container: {
@@ -120,7 +131,11 @@ const Home = () => {
     <div className="app-container" style={{ ...styles.container, ...backgroundStyle }}>
       <div style={styles.logoContainer}>
         <img
-          src={settings?.logoUrl || "/images/default-logo.png"}
+          src={
+            settings?.logoUrl
+              ? SERVER_BASE_URL + settings.logoUrl
+              : "/images/default-logo.png"
+          }
           alt="Business Logo"
           style={styles.logo}
         />
