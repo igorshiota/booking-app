@@ -1,5 +1,8 @@
-# Use official Node image
+# Use official Node image (Debian-based)
 FROM node:18
+
+# Upgrade system packages, including zlib
+RUN apt-get update && apt-get upgrade -y && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
 WORKDIR /app
