@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { db, storage } from "../../firebaseConfig";
-import { collection, addDoc, getDocs, doc, updateDoc, setDoc } from "firebase/firestore";
+import { collection, addDoc, getDocs, doc, updateDoc, setDoc, deleteDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 const fontMeta = {
@@ -172,6 +172,26 @@ const Dashboard = () => {
       ...prev,
       serviceIds: prev.serviceIds.includes(id) ? prev.serviceIds.filter(s => s !== id) : [...prev.serviceIds, id]
     }));
+  };
+
+  const handleDeleteCategory = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this category?")) return;
+    await deleteDoc(doc(db, "servicesCategory", id));
+    fetchCategories();
+  };
+
+  const handleDeleteService = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this service?")) return;
+    await deleteDoc(doc(db, "services", id));
+    fetchServices();
+    fetchStaff(); 
+  };
+
+  const handleDeleteStaff = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this staff member?")) return;
+    await deleteDoc(doc(db, "providers", id));
+    fetchStaff();
+    fetchServices(); 
   };
 
   const uploadImage = async (file, path) => {
@@ -436,7 +456,8 @@ const handleBgUpload = async () => {
               <div key={s.id} style={styles.card}>
                 <strong>{s.name}</strong><br />
                 Services: {services.filter((srv) => s.serviceIds.includes(srv.id)).map((srv) => srv.name).join(", ")}<br />
-                Times: {s.availableTimes.join(", ")}
+                Times: {s.availableTimes.join(", ")}<br />
+                <button style={styles.deleteButton} onClick={() => handleDeleteStaff(s.id)}>Delete</button>
               </div>
             ))}
           </div>
@@ -446,6 +467,7 @@ const handleBgUpload = async () => {
             {categories.map((cat) => (
               <div key={cat.id} style={styles.card}>
                 {cat.name}
+                <br /><button style={styles.deleteButton} onClick={() => handleDeleteCategory(cat.id)}>Delete</button>
               </div>
             ))}
           </div>
@@ -455,7 +477,8 @@ const handleBgUpload = async () => {
             {services.map((srv) => (
               <div key={srv.id} style={styles.card}>
                 <strong>{srv.name}</strong><br />
-                Category: {categories.find((cat) => cat.id === srv.categoryId)?.name || "Uncategorized"}
+                Category: {categories.find((cat) => cat.id === srv.categoryId)?.name || "Uncategorized"}<br />
+                <button style={styles.deleteButton} onClick={() => handleDeleteService(srv.id)}>Delete</button>
               </div>
             ))}
           </div>
@@ -543,6 +566,18 @@ const styles = {
     borderRadius: "6px",
     cursor: "pointer"
   },
+
+  deleteButton: {
+    marginTop: "10px",
+    padding: "6px 12px",
+    backgroundColor: "#dc3545",
+    color: "#fff",
+    border: "none",
+    borderRadius: "4px",
+    cursor: "pointer",
+    fontSize: "14px",
+  },
+
   checkboxGroup: {
     marginBottom: "15px"
   },
