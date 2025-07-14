@@ -6,8 +6,8 @@ const Cart = ({ cart }) => {
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState("");
 
-  const totalPrice = cart.reduce((sum, item) => sum + (item.price || 0), 0);
-  const totalDuration = cart.reduce((sum, item) => sum + (item.duration || 0), 0);
+  const totalPrice = cart.reduce((sum, item) => sum + (Number(item.price) || 0), 0);
+  const totalDuration = cart.reduce((sum, item) => sum + (Number(item.duration) || 0), 0);
 
   const handleBooking = async (e) => {
     e.preventDefault();
@@ -23,13 +23,17 @@ const Cart = ({ cart }) => {
     ).join("\n");
 
     const templateParams = {
-      user_name: name,
-      user_email: email,
-      message: serviceList,
-      total_price: totalPrice,
-      total_duration: totalDuration,
-      to_email: `${email}, igor.shiota@gmail.com`,
-    };
+        user_name: name,
+        user_email: email,
+        orders: cart.map(item =>
+          `${item.name} with ${item.provider.name} at ${item.timeSlot} — $${item.price}`
+        ).join("\n"),
+        total_duration: totalDuration,
+        cost_total: totalPrice
+     };
+
+     console.log("Sending templateParams:", templateParams);
+
 
     try {
       await emailjs.send(
