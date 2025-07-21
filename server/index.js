@@ -3,43 +3,45 @@ const multer = require("multer");
 const cors = require("cors");
 const path = require("path");
 const fs = require("fs");
-
+const { escape } = require("validator"); // sanitize user input strings
 
 const app = express();
-app.disable('x-powered-by');
+app.disable("x-powered-by");
 
 const PORT = 8080;
 
-// Log incoming requests to /images
-app.use("/images", (req, res, next) => {
-  console.log(`[Static] ${req.method} request for ${req.url}`);
-  next();
-});
+// Static files middleware
+app.use(
+  "/images",
+  express.static(path.join(__dirname, "public/images"), { fallthrough: false })
+);
 
-// Static files middleware with error handling
-app.use("/images", express.static(path.join(__dirname, "public/images"), { fallthrough: false }));
-
-// Error handler middleware for static files
+// Error handler middleware
 app.use((err, req, res, next) => {
   console.error("Static file serving error:", err);
-  res.status(err.status || 500).send(err.message);
+  res.status(err.status || 500).send("Internal Server Error");
 });
 
-// CORS for other routes
+// CORS middleware (you could use the cors package more safely)
 app.use((req, res, next) => {
-  if (req.method === "OPTIONS") {
-    res.header("Access-Control-Allow-Origin", "http://localhost:3000");
+  const origin = req.headers.origin;
+  const allowedOrigin = "http://localhost:3000";
+  if (origin === allowedOrigin) {
+    res.header("Access-Control-Allow-Origin", allowedOrigin);
     res.header("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
     res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  }
+
+  if (req.method === "OPTIONS") {
     return res.sendStatus(200);
   }
-  res.header("Access-Control-Allow-Origin", "http://localhost:3000");
+
   next();
 });
 
 app.use(express.json());
 
-// Set up storage for uploaded files
+// --- Multer storage with filename sanitization ---
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     const dir = path.join(__dirname, "public/images");
@@ -47,18 +49,25 @@ const storage = multer.diskStorage({
     cb(null, dir);
   },
   filename: (req, file, cb) => {
-    cb(null, `${Date.now()}-${file.originalname}`);
+    // sanitize filename to avoid directory traversal and ReDoS patterns
+    const originalName = path.basename(file.originalname).replace(/[^a-zA-Z0-9.\-_]/g, "_");
+    cb(null, `${Date.now()}-${originalName}`);
   }
 });
 
 const upload = multer({ storage });
 
-// Upload endpoint
+// --- Upload endpoint with check ---
 app.post("/upload", upload.single("image"), (req, res) => {
-  const filePath = `/images/${req.file.filename}`;
+  if (!req.file) {
+    return res.status(400).json({ error: "No file uploaded" });
+  }
+
+  const filePath = `/images/${escape(req.file.filename)}`;
   res.json({ url: filePath });
 });
 
+// Start server
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });
