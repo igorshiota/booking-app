@@ -3,6 +3,13 @@ import { db, storage } from "../../firebaseConfig";
 import { collection, addDoc, getDocs, doc, updateDoc, setDoc, deleteDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
+//  Sanitizer to strip < and > chars to prevent HTML injection
+const sanitizeInput = (input) => {
+  if (!input) return "";
+  return input.replace(/[<>]/g, "").trim();
+};
+
+
 const fontMeta = {
   "Open Sans": {
     url: "https://fonts.googleapis.com/css2?family=Open+Sans&display=swap",
@@ -99,66 +106,87 @@ const Dashboard = () => {
   };
 
   const handleAddCategory = async () => {
-    if (!newCategoryName.trim()) {
-      alert("Category name cannot be empty");
-      return;
-    }
-    if (categories.some(cat => cat.name.toLowerCase() === newCategoryName.toLowerCase().trim())) {
-      alert("Category already exists");
-      return;
-    }
-    await addDoc(collection(db, "servicesCategory"), { name: newCategoryName.trim() });
-    setNewCategoryName("");
-    fetchCategories();
-  };
+  const safeCategoryName = sanitizeInput(newCategoryName);
+  if (!safeCategoryName) {
+    alert("Category name cannot be empty");
+    return;
+  }
+  if (categories.some(cat => cat.name.toLowerCase() === safeCategoryName.toLowerCase())) {
+    alert("Category already exists");
+    return;
+  }
+  await addDoc(collection(db, "servicesCategory"), { name: safeCategoryName });
+  setNewCategoryName("");
+  fetchCategories();
+};
+
 
   const handleAddService = async () => {
-    if (!newService.name.trim() || !newService.categoryId) {
-      alert("Please enter service name and select a category");
-      return;
-    }
-    const newDoc = await addDoc(collection(db, "services"), newService);
-    for (const staffId of newService.staff) {
-      const refDoc = doc(db, "providers", staffId);
-      const member = staff.find(s => s.id === staffId);
-      if (member) {
-        const updatedServiceIds = member.serviceIds ? [...member.serviceIds, newDoc.id] : [newDoc.id];
-        await updateDoc(refDoc, { serviceIds: updatedServiceIds });
-      }
-    }
-    setNewService({ name: "", description: "", duration: "", price: "", staff: [], categoryId: "" });
-    fetchServices();
-    fetchStaff();
+  const safeName = sanitizeInput(newService.name);
+  const safeDescription = sanitizeInput(newService.description);
+
+  if (!safeName || !newService.categoryId) {
+    alert("Please enter service name and select a category");
+    return;
+  }
+
+  // Create a sanitized copy of the newService object to save
+  const sanitizedService = {
+    ...newService,
+    name: safeName,
+    description: safeDescription,
   };
+
+  const newDoc = await addDoc(collection(db, "services"), sanitizedService);
+
+  for (const staffId of newService.staff) {
+    const refDoc = doc(db, "providers", staffId);
+    const member = staff.find(s => s.id === staffId);
+    if (member) {
+      const updatedServiceIds = member.serviceIds ? [...member.serviceIds, newDoc.id] : [newDoc.id];
+      await updateDoc(refDoc, { serviceIds: updatedServiceIds });
+    }
+  }
+
+  setNewService({ name: "", description: "", duration: "", price: "", staff: [], categoryId: "" });
+  fetchServices();
+  fetchStaff();
+};
+
 
   const handleAddStaff = async () => {
-    if (!newStaff.name.trim()) {
-      alert("Please enter staff name");
-      return;
+  const safeName = sanitizeInput(newStaff.name);
+  if (!safeName) {
+    alert("Please enter staff name");
+    return;
+  }
+
+  const times = availableTimesInput
+    .split(",")
+    .map(t => sanitizeInput(t))
+    .filter(t => t);
+
+  const newDoc = await addDoc(collection(db, "providers"), {
+    name: safeName,
+    availableTimes: times,
+    serviceIds: newStaff.serviceIds
+  });
+
+  for (const serviceId of newStaff.serviceIds) {
+    const refDoc = doc(db, "services", serviceId);
+    const service = services.find(s => s.id === serviceId);
+    if (service) {
+      const updatedStaff = service.staff ? [...service.staff, newDoc.id] : [newDoc.id];
+      await updateDoc(refDoc, { staff: updatedStaff });
     }
+  }
 
-    const times = availableTimesInput.split(",").map(t => t.trim()).filter(t => t);
+  setNewStaff({ name: "", availableTimes: [], serviceIds: [] });
+  setAvailableTimesInput("");
+  fetchServices();
+  fetchStaff();
+};
 
-    const newDoc = await addDoc(collection(db, "providers"), {
-      name: newStaff.name,
-      availableTimes: times,
-      serviceIds: newStaff.serviceIds
-    });
-
-    for (const serviceId of newStaff.serviceIds) {
-      const refDoc = doc(db, "services", serviceId);
-      const service = services.find(s => s.id === serviceId);
-      if (service) {
-        const updatedStaff = service.staff ? [...service.staff, newDoc.id] : [newDoc.id];
-        await updateDoc(refDoc, { staff: updatedStaff });
-      }
-    }
-
-    setNewStaff({ name: "", availableTimes: [], serviceIds: [] });
-    setAvailableTimesInput("");
-    fetchServices();
-    fetchStaff();
-  };
 
   const handleStaffCheckbox = (id) => {
     setNewService(prev => ({
